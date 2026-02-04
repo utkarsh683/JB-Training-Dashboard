@@ -6716,6 +6716,46 @@
                     themeSelect.addEventListener('change', (e) => setTheme(e.target.value));
                 }
             } catch (e) { console.warn('Theme init failed', e); }
+            // Ensure attached PDF is permanently available in the file list (deferred to after init)
+            try {
+                setTimeout(() => {
+                    const permanentPdfName = 'JB Training Module (2) (1).pdf';
+                    let existsInSystem = false;
+                    if (window.uploadSystem && Array.isArray(uploadSystem.files)) {
+                        existsInSystem = uploadSystem.files.some(f => f && f.name === permanentPdfName);
+                    }
+                    if (!existsInSystem) {
+                        const now = new Date().toISOString();
+                        const entry = {
+                            id: 'permanent-' + Date.now(),
+                            name: permanentPdfName,
+                            type: 'pdf',
+                            size: '—',
+                            rawSize: 0,
+                            date: now,
+                            formattedDate: new Date().toLocaleDateString(),
+                            content: permanentPdfName,
+                            file: undefined,
+                            selected: false,
+                            permanent: true
+                        };
+                        if (window.uploadSystem && Array.isArray(uploadSystem.files)) {
+                            uploadSystem.files.push(entry);
+                            try { if (typeof uploadSystem.saveToStorage === 'function') uploadSystem.saveToStorage(); } catch(e){}
+                            try { if (typeof uploadSystem.renderFiles === 'function') uploadSystem.renderFiles(); } catch(e){}
+                            try { if (typeof uploadSystem.updateStats === 'function') uploadSystem.updateStats(); } catch(e){}
+                        } else {
+                            try {
+                                const stored = JSON.parse(localStorage.getItem('uploadedFiles') || '[]');
+                                if (!stored.some(f => f && f.name === permanentPdfName)) {
+                                    stored.push(entry);
+                                    localStorage.setItem('uploadedFiles', JSON.stringify(stored));
+                                }
+                            } catch (e) {}
+                        }
+                    }
+                }, 300);
+            } catch (e) { console.warn('Could not register permanent PDF', e); }
             
             // Add keyboard shortcuts for TTS
             document.addEventListener('keydown', (e) => {
